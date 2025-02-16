@@ -129,7 +129,7 @@ io.on('connection', (socket: Socket) => {
 });
 
 // 启动服务器
-const PORT = 3002;
+const PORT = 3000;
 httpServer.listen(PORT, () => {
     console.log(`双人对战服务器运行在端口 ${PORT}`);
 });

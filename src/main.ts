@@ -34,7 +34,7 @@ const io = new Server(httpServer, {
         origin: "*",                      // 明确跨域配置
         methods: ["GET", "POST"],
         allowedHeaders: ["Content-Type"],
-        credentials: true
+        credentials: false
     }
 });
 
@@ -43,7 +43,7 @@ app.use(cors({
     origin: "*", // 允许所有来源
     allowMethods: ['GET', 'POST'],
     allowHeaders: ['Content-Type'],
-    credentials: true
+    credentials: false
 }));
 app.use(router.routes()).use(router.allowedMethods());
 

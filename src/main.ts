@@ -38,7 +38,13 @@ const io = new Server(httpServer, {
     }
 });
 
-app.use(cors());
+// 使用 cors 中间件
+app.use(cors({
+    origin: "*", // 允许所有来源
+    allowMethods: ['GET', 'POST'],
+    allowHeaders: ['Content-Type'],
+    credentials: true
+}));
 app.use(router.routes()).use(router.allowedMethods());
 
 const rooms: Map<string, Room> = new Map();

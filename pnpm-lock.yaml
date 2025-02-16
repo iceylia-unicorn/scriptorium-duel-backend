@@ -17,9 +17,6 @@ importers:
       koa-router:
         specifier: ^13.0.1
         version: 13.0.1
-      scriptorium_duel:
-        specifier: 'link:'
-        version: 'link:'
       socket.io:
         specifier: ^4.8.1
         version: 4.8.1

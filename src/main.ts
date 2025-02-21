@@ -27,11 +27,11 @@ const app = new Koa();
 const router = new Router();
 const httpServer = createServer(app.callback());
 const io = new Server(httpServer, {
-    transports: ['polling', 'websocket'], // 允许所有传输方式
+    transports: ['websocket', 'polling'],// 允许所有传输方式
     pingTimeout: 60000,
     pingInterval: 25000,
     cors: {
-        origin: "*",                      // 明确跨域配置
+        origin: "http://localhost:5173",                      // 明确跨域配置
         methods: ["GET", "POST"],
         allowedHeaders: ["Content-Type"],
         credentials: false
@@ -94,6 +94,7 @@ io.on('connection', (socket: Socket) => {
         // 房间满员时开始游戏
         if (room.players.length === 2) {
             room.status = 'playing';
+            // 使用io.emit将发送到所有成员
             io.to(roomId).emit('duelStart', {
                 players: room.players.map(p => p.id),
                 initialSequence: room.gameState.sequence
@@ -105,6 +106,11 @@ io.on('connection', (socket: Socket) => {
             playerNumber: room.players.length
         });
     });
+
+    socket.on("initDeck", (cards:Array<{name:string, id:number}>, callback)=>{
+        if (!currentRoom || currentRoom.status !== 'playing') return callback({error: "room is not ready"});
+        socket.to(currentRoom.id).emit('syncInitDeck', cards);
+    })
 
     // 处理游戏事件
     socket.on('duelEvent', (event: any) => {

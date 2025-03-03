@@ -33,7 +33,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
-          file: Dockerfile.dev # 指定文件
+          file: Dockerfile # 指定文件
           push: true
           tags: registry.cn-chengdu.aliyuncs.com/iceylia/scriptorium-duel-backend:latest
 
@@ -41,6 +41,6 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
-          file: Dockerfile.dev # 指定文件
+          file: Dockerfile # 指定文件
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/scriptorium-duel-backend:latest

@@ -31,7 +31,7 @@ const io = new Server(httpServer, {
     pingTimeout: 60000,
     pingInterval: 25000,
     cors: {
-        origin: "http://localhost:5173",                      // 明确跨域配置
+        origin: "*",                      // 明确跨域配置
         methods: ["GET", "POST"],
         allowedHeaders: ["Content-Type"],
         credentials: false
@@ -107,7 +107,7 @@ io.on('connection', (socket: Socket) => {
         });
     });
 
-    socket.on("initDeck", (cards:Array<{name:string, id:number}>, callback)=>{
+    socket.on("initDeck", (cards:Array<{name:string, id:string}>, callback)=>{
         if (!currentRoom || currentRoom.status !== 'playing') return callback({error: "room is not ready"});
         socket.to(currentRoom.id).emit('syncInitDeck', cards);
     })
@@ -144,4 +144,22 @@ io.on('connection', (socket: Socket) => {
 const PORT = 3000;
 httpServer.listen(PORT, () => {
     console.log(`双人对战服务器运行在端口 ${PORT}`);
+});
+
+// 监听 SIGINT（Ctrl+C）
+process.on('SIGINT', () => {
+    console.log('接收到 SIGINT 信号，正在关闭服务器...');
+    httpServer.close(() => {
+        console.log('服务器已关闭，进程即将退出');
+        process.exit(0);
+    });
+});
+
+// 监听 SIGTERM 信号
+process.on('SIGTERM', () => {
+    console.log('接收到 SIGTERM 信号，正在关闭服务器...');
+    httpServer.close(() => {
+        console.log('服务器已关闭，进程即将退出');
+        process.exit(0);
+    });
 });

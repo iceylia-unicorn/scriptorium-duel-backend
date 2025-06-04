@@ -28,14 +28,14 @@ const router = new Router();
 const httpServer = createServer(app.callback());
 const io = new Server(httpServer, {
     transports: ['websocket', 'polling'],// 允许所有传输方式
-    pingTimeout: 60000,
-    pingInterval: 25000,
+    pingTimeout: 60000, // 心跳超时为60秒
+    pingInterval: 25000, // 心跳包发送间隔为25秒
     cors: {
         origin: "*",                      // 明确跨域配置
         methods: ["GET", "POST"],
         allowedHeaders: ["Content-Type"],
         credentials: false
-    }
+    },
 });
 
 // 使用 cors 中间件
@@ -107,11 +107,24 @@ io.on('connection', (socket: Socket) => {
         });
     });
 
-    socket.on("initDeck", (cards:Array<{name:string, id:string}>, callback)=>{
-        if (!currentRoom || currentRoom.status !== 'playing') return callback({error: "room is not ready"});
+    socket.on("initDeck", (cards:Array<{name:string, id:string}>)=>{
+        if (!currentRoom || currentRoom.status !== 'playing') return;
         socket.to(currentRoom.id).emit('syncInitDeck', cards);
     })
+    //消息发送处理
+    socket.on('battleMessage', (data) => {
+        if (!currentRoom) return;
 
+        // 添加发送者标识
+        const sender = currentRoom.players.find(p => p.id === socket.id)?.isHost ? 'Host' : 'Guest';
+
+        // 转发给房间其他成员
+        socket.to(currentRoom.id).emit('battleMessage', {
+            ...data,
+            sender,
+            isOpponent: true
+        });
+    });
     // 处理游戏事件
     socket.on('duelEvent', (event: any) => {
         if (!currentRoom || currentRoom.status !== 'playing') return;
@@ -125,7 +138,21 @@ io.on('connection', (socket: Socket) => {
         // 广播给对手（排除自己）
         socket.to(currentRoom.id).emit('duelEvent', event);
     });
+    socket.on('turnOver', (data) => {
+        if (!currentRoom || currentRoom.status !== 'playing') return;
 
+        // 转发给对手
+        socket.to(currentRoom.id).emit('turnOver', {
+            cards: data,
+            sequence: ++currentRoom.gameState.sequence
+        });
+    });
+    socket.on('leaveRoom', ()=>{
+        if (currentRoom) {
+            rooms.delete(currentRoom.id);
+            socket.to(currentRoom.id).emit('gameOver', {reason: '对手已离开房间'});
+        }
+    })
     // 断线处理
     socket.on('disconnect', () => {
         if (currentRoom) {
@@ -134,32 +161,18 @@ io.on('connection', (socket: Socket) => {
             // 如果任意玩家断开，结束游戏
             if (currentRoom.status === 'playing') {
                 io.to(currentRoom.id).emit('duelEnd', { reason: '对手断开连接' });
+            }
+            //
+            if(currentRoom.players.length <= 0) {
                 rooms.delete(currentRoom.id);
             }
         }
     });
+
 });
 
 // 启动服务器
 const PORT = 3000;
 httpServer.listen(PORT, () => {
     console.log(`双人对战服务器运行在端口 ${PORT}`);
-});
-
-// 监听 SIGINT（Ctrl+C）
-process.on('SIGINT', () => {
-    console.log('接收到 SIGINT 信号，正在关闭服务器...');
-    httpServer.close(() => {
-        console.log('服务器已关闭，进程即将退出');
-        process.exit(0);
-    });
-});
-
-// 监听 SIGTERM 信号
-process.on('SIGTERM', () => {
-    console.log('接收到 SIGTERM 信号，正在关闭服务器...');
-    httpServer.close(() => {
-        console.log('服务器已关闭，进程即将退出');
-        process.exit(0);
-    });
 });
